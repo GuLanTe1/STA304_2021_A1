@@ -1,0 +1,214 @@
+---
+title: "Death Registry Statistics in Etobicoke Experience Dramatic Increase"
+subtitle: "Civic centres experienced unusual high registration of deaths due to COVID-19."
+author: "Xiangyu Wang"
+thanks: "Code and data are available at: https://github.com/GuLanTe1/STA304_2022_A1.git."
+date: "03 February 2022"
+abstract: "Death Registry Statistics data was accessed from the City of Toronto Open Data Portal to analyze how death registry statistics in civic centres of the City of Toronto have changed over time and how COVID-19 outbreaks have affected the overall death registry statistics. Although data from specific civic centres are missing due to administration adjustment, the Death documented in the City of Toronto, represented by the Etobicoke region, has remained a naturally risen pattern between 2011-2019 due to the increase in population. However, the COVID-19 pandemic and waves of outbreaks have significantly increased Death registry statistics in the Etobicoke region and caused pressure on the healthcare system, suggesting people should take severe  precautions against the virus."
+output: pdf_document
+License: MIT, Open Government License - Toronto
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(knitr)
+library(usethis)
+```
+
+# Introduction
+
+Now that it has been two whole years since the first outbreak of COVID-19, the initial atmosphere of panic, such as lockdowns, the stock market crash, etc., has long since faded with the support of vaccines and the waning lethality of the virus. But it still takes time to repair the damage to global society as a whole from COVID-19, which includes shortages in global supply chains, high inflation, and a massive shock to the demand for medical resources. 
+
+As Toronto residents, we would like to thank the health care system for their contributions during the pandemic, as well as the Registry Services Tracking System and all involved staff for providing a variety of valuable data. These data show the specific impact of the virus on society in the most intuitive way. 
+
+By analyzing and Visualization local death registration data and COVID-19 cases, the substantial negative impact of COVID-19 on the medical system can be observed with a dramatic increase in the death documented in Etobicoke civic centre, warning people that they need to continue to take precautions against the virus to 'flatten the curve' (The Economist 2020) and help reduce pressure on the healthcare system.
+
+# Data
+
+## Data Source
+
+Death Registry Statistics data in this study were accessed Using R (R Core Team 2021) from the City of Toronto Open Data Portal (Gelfand 2020). The dataset is a comprehensive documentation of deaths documented by Registry Services staff separated in civic centres of Scarborough, North York, Toronto, and Etobicoke. The data was collected from the report of death occurred event as well as survey study related to Canadian residents and non-residents(Death database 2020). The purpose of the dataset is to support the City's operational requirements and business functions under Provincial legislation of the Vital Statistics Act (Open Data Portal 2022). However, the weakness of the dataset is that only data from Etobicoke was available since the year 2020, which limited the study from focusing on the Etobicoke region rather than the broad view of the Great Toronto Area.
+
+COVID-19 Cases in Toronto data were also accessed Using R from the City of Toronto Open Data Portal(Gelfand 2020). Toronto Public Health was responsible for reporting data from the first identified COVID-19 case in January 2020 until today to the provincial Case & Contact Management System. The purpose of the dataset is also to support the City's operational requirements and public health measurements (Open Data Portal 2022). The strength of the dataset is that it included a very detailed status of patients' status, including whether the patient is in ICU or ever in ICU, etc. However, we only focus on the date and the case count in this study.
+
+
+## Data Characteristics
+
+Death Registry Statistics dataset contains comprehensive death registry data between the years 2011 and 2022 of Scarborough, North York, Toronto, and Etobicoke, which report to its civic centre. There was a total of 782 observations with 5 variables: _id, Civic_Centre, Death_Licenses, Place_of_death, and Time_period. In the study, we mainly focus on the last 4 variables, which contain critical information for our analysis. The Civic_Centre has four values: SC, NY, TO, ET, representing the center where the death was recorded. In the later processing, they were replaced with the full name of the representative region for easy reading and comprehension purposes. The Death_Licenses is the total number of deaths documented in that time period. And the Place_of_death identifies the place where the death occurred. Finally, the Time_period is when the death is registered, and it is counted monthly. Moreover, a sub-dataset of original big dataset called "ET" was created and it includes only data from Etobicoke region, and 'as.Date' function was called multiple times to adjust time_period variable from class 'character' to class 'Date' for graphing purpose.
+
+A sample view of the dataset is displayed below.
+
+
+
+```{r}
+# read csv files
+death_registry <- read.csv("death_registry.csv")
+covid <- read.csv("covid.csv")
+
+# change symbols into full names
+death_registry$CIVIC_CENTRE <- sub("ET", "Etobicoke", death_registry$CIVIC_CENTRE)
+
+death_registry$CIVIC_CENTRE <- sub("NY", "North York", death_registry$CIVIC_CENTRE)
+
+death_registry$CIVIC_CENTRE <- sub("SC", "Scarborough", death_registry$CIVIC_CENTRE)
+
+death_registry$CIVIC_CENTRE <- sub("TO", "Toronto ", death_registry$CIVIC_CENTRE)
+
+# create new variable called 'Year' which is useful in latter graphing 
+death_registry <- death_registry |>
+  mutate(Year = substr(death_registry$TIME_PERIOD, 1, 4))
+
+# create a table of preview of the data
+death_registry |>
+  select(CIVIC_CENTRE, DEATH_LICENSES, PLACE_OF_DEATH,  TIME_PERIOD) |>
+  slice(1:10) |>
+  kable(
+    caption = "Preview of Death Registry Statistics",
+    col.names = c("Civic centre", "Death licenses", "Place of death", "Time period"),
+    align = c("c", "c","c","c","c","c"),
+    booktabs = TRUE,
+    linesep = ""
+  )
+
+```
+For the COVID-19 Cases in Toronto dataset, there were in total 277473 observations, which represent the total confirmed cases in the City of Toronto area. And the only variable we were interested in is Reported.Date, which records the date when a confirmed case was reported. Moreover, since the two databases have overlapping time variables, it is convenient for us to analyze and draw conclusions about the correlation between the death registry and COVID-19 outbreaks.
+
+## Data Visualization
+
+
+```{r}
+# create a barplot of death counts of different regions
+
+death_registry|> ggplot(aes(x = Year, y = DEATH_LICENSES, fill = CIVIC_CENTRE)) + 
+  geom_bar(stat = "identity")+
+  labs(x = "Year", y = "Death Licenses", fill = "Civic Centre", title = "Death Documented by Four Civic Centres", subtitle = "Death Documented Increased Rapidly in Etobicoke over 2020 and 2021", caption = "Figure 1: Annual death documented by four civic centres")+
+    theme(plot.caption = element_text(hjust = 0.5))
+
+```
+Figure 1 is a barplot of death documented by four civic centres. It records annual death registered by four civic centres and separates them by different colors. The total death documented in each year since 2011 seems to haven't changed much since they all topped and floated around 17500. Thus, we first assume that COVID-19 will not significantly impact the death toll, and the fact that the total Death Licenses each year in Figure 1, using barplot and filling civics centre with different color seems to support the above assumption since not many changes happened in the total death count between the years 2011 and year 2021. However, after looking closely at Figure 1, we found that only Etobicoke's data, color red, was recorded in the four civic centres, and the data of its single region produced an increase of about 26.8% in 2020 compared to 2019. And it is even more shocking that the death of Etobicoke regions alone in the year 2021 was equal to all the death counts of four areas in 2017.
+
+
+
+```{r}
+# create another barplot that focus on information of Place where death occurred.
+
+death_registry|> ggplot(aes(x = Year, y = DEATH_LICENSES, fill = PLACE_OF_DEATH)) + 
+  geom_bar(stat = "identity")+
+  labs(x= "Year", y = "Death Licenses", fill = "Place of Death", title = "Death Documented by Place where Death Occurred", subtitle = "Majority of Death Occurred within City of Toronto Limits", caption = "Figure 2: Place where death occurred")+
+    theme(plot.caption = element_text(hjust = 0.5))
+```
+After we got an astonishing rise in death registrations, we used another variable, Place_of_Death, to find other potential reasons for the spike in data. We also graphed another barplot to observe possible changes in place of death. In this plot, death licenses were secreted by their place of death, and the ratio between the two is still roughly equal to 1:5 in the past ten years. And unfortunately, there is not much apparent information in Figure 2 suggesting trends of the place of death have changed since the COVID-19 outbreaks. It only shows a slight increase in death count outside city limits of about a few hundred, and it was insufficient to draw any conclusion about how COVID-19 affects the place of death occurred and death documented.
+
+
+```{r}
+
+#create a sub-dataset of original big dataset called "ET" which include only data from Etobicoke region and adjust time_period variable.
+ET <- filter(death_registry, CIVIC_CENTRE == "Etobicoke")
+ET <- ET |> mutate(TIME_PERIOD = as.Date(paste(ET$TIME_PERIOD,"-01",sep="")))
+
+
+ET |> ggplot(mapping = aes(x = TIME_PERIOD, y = DEATH_LICENSES )) + 
+  geom_bar(stat = "identity", colour = "#0099FF" ) + 
+  labs(x= "Date Recorded", y = "Death Licenses", title = "Death Documented in Etobicoke Civic Centres"
+  , subtitle = "Death Documented Increased Rapidly in Etobicoke over 2020 and 2021", caption = "Figure 3: High registration of deaths during COVID-19 outbreaks") +
+  scale_x_date(breaks = seq.Date(from = as.Date("2011-01-01"), 
+                                     to = as.Date("2022-01-01"), by = 720))+
+  theme(plot.caption = element_text(hjust = 0.5))
+
+```
+
+# Results
+Since only the death data in the Etobicoke area is relatively complete in the database, we plotted a barplot of the death registrations in this area over time to find some inspiration. Figure 3 presents a barplot visualization of the data using time as the x-axis and death registrations as the y-axis. We surprisingly found that the number of death registrations showed regular cyclical changes before the outbreak of COVID-19 (2020-01-01), and this study speculated that seasonal effects should cause the cyclical changes. After some research, a monthly and daily patterns of death study conducted by Richard Trudeau using time series analysis verifies the assumption (Richard Trudeau 1997). But since the first case of COVID-19 was identified in Toronto in January 2020, the number of deaths documented has increased rapidly with each wave of COVID-19 original virus and its variants delta and omicron, and daily COVID-19 outbreaks in Figure 4 below confirms the number of confirmed cases of COVID-19 in Toronto forms a strong positive correlation with death documented in Etobicoke.
+
+```{r}
+
+#change date format from char to date.
+covid <- covid |> mutate(Reported.Date = as.Date(Reported.Date))
+
+
+# create visualization of toronto covid cases
+ggplot(covid,mapping = aes(x = Reported.Date, y = Assigned_ID ))+
+  geom_bar(stat = "identity", colour = "#0099FF" ) +
+  labs(x= "Date Recorded", y = "Case Reported", title = "COVID-19 Cases Reported to Toronto Public Health ", subtitle = "Toronto COVID-19 Cases Increased Dramatically during Winter-Spring of 2021 and Winter of 2022", caption = "Figure 4: COVID-19 cases trend matches death licenses trend")+
+  scale_x_date(breaks = seq.Date(from = as.Date("2020-01-21"), 
+                                     to = as.Date("2022-02-01"), by = 120))+
+  theme(plot.caption = element_text(hjust = 0.5),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+```
+
+# Discussion
+
+## Limitations
+The Death Licenses dataset is limited because only data from the Etobicoke region was available during the COVID-19 outbreaks period. It may reduce the study's accuracy since only one of four regions' data was available. The conclusion could be more solid based on analyzing four areas rather than one region.
+
+## 'Tidal Bulge Effect'
+
+Tidal Bulge Effect is an ocean phenomenon where the ocean water is pulled toward the moon due to the gravitational attraction of the moon plus the effect of Earth's rotation (Tides and Water Levels 2005). Seawater often rises rapidly and overflows into low-lying coastal areas during this phenomenon. We consider that the rapid increase in the number of deaths in the Etobicoke region is the result of the combination of the cold winter climate and the spread of the virus, especially where the virus reproduction faster under the environment of low temperature, low humidity, and low amount of UV radiation (Ma, Y., Pei, S., Shaman, J. et al. 2021). And a higher reproduction rate of the COVID virus represents a higher chance of mutations, infections, and transmissions. Eventually, it leads to high infections case numbers and high death reported, as we observed in Figure 3 and Figure 4.
+
+
+# Conclusion
+
+Although the Death Registry data provided by Open Data Toronto has data missing for the Scarborough, North York, Toronto regions, which we suspect was due to administration changes, areas no longer reported their death documented data to the City of Toronto Open Data Portal. Luckily we have complete data for the Etobicoke area. Etobicoke, the main urban area of Toronto, achieved an average annual population growth rate of about 2% between 2011 and 2016, 2.5 times the average yearly growth rate of Toronto's population (Toronto City Planning 2020). Therefore, demographic data for this area, including death rates, can be considered a rough proxy for the Toronto area. Combining the data and graphical analysis of Figure 3 and Figure 4, we can conclude that civic centers in the City of Toronto have experienced unusually high registration of deaths due to COVID-19. So please take severe precautions and measures against the virus, especially during the winter.
+
+\newpage
+
+# Reference
+
+City of Toronto. (n.d.). City Planning 2016 census profile 2018. Retrieved February 6, 2022, from https://www.toronto.ca/wp-content/uploads/2018/09/96e3-City_Planning_2016_Census_Profile_2018_25Wards_Ward03.pdf 
+
+Government of Canada, S. C. (2022, January 21). Statistics Canada, Canadian Vital Statistics - Death Database (CVSD). Surveys and statistical programs. Retrieved February 6, 2022, from https://www23.statcan.gc.ca/imdb/p2SV.pl?Function=getSurvey&amp;SDDS=3233 
+
+ Hadley Wickham, Jennifer Bryan and Malcolm Barrett
+  (2021). usethis: Automate Package and Project
+  Setup. R package version 2.1.5.
+  https://CRAN.R-project.org/package=usethis
+  
+Hadley Wickham, Romain François, Lionel Henry and
+  Kirill Müller (2021). dplyr: A Grammar of Data
+  Manipulation. R package version 1.0.7.
+  https://CRAN.R-project.org/package=dplyr
+  
+  Ma, Y., Pei, S., Shaman, J. et al. Role of meteorological factors in the transmission of SARS-CoV-2 in the United States. Nat Commun 12, 3602 (2021). https://doi.org/10.1038/s41467-021-23866-7
+  
+  National Oceanic and Atmospheric Administration, US Department of Commerce. (2005, December 1). Tides and water levels, gravity, inertia, and the two bulges, nos education offering. Gravity, Inertia, and the Two Bulges - Tides and water levels: NOAA's National Ocean Service Education. Retrieved February 6, 2022, from https://oceanservice.noaa.gov/education/tutorial_tides/tides03_gravity.html 
+  
+R Core Team (2021). R: A language and environment for
+  statistical computing. R Foundation for Statistical
+  Computing, Vienna, Austria. URL https://www.R-project.org/.
+  
+Sharla Gelfand (2020). opendatatoronto: Access the
+  City of Toronto Open Data Portal. R package version
+  0.1.4.
+  https://CRAN.R-project.org/package=opendatatoronto
+  
+  The Economist Newspaper. (n.d.). Covid-19 is now in 50 countries, and things will get worse. The Economist. Retrieved February 6, 2022, from https://www.economist.com/briefing/2020/02/29/covid-19-is-now-in-50-countries-and-things-will-get-worse 
+  
+  Trudeau, R. (2021, June 1). Monthly and daily onthly and daily patterns of death. Monthly and daily patterns of death - ARCHIVED. Retrieved February 6, 2022, from https://www150.statcan.gc.ca/n1/pub/91f0015m/91f0015m2021002-eng.htm 
+  
+Wickham et al., (2019). Welcome to the tidyverse.
+  Journal of Open Source Software, 4(43), 1686,
+  https://doi.org/10.21105/joss.01686
+  
+Yihui Xie (2021). knitr: A General-Purpose Package
+  for Dynamic Report Generation in R. R package
+  version 1.37.
+
+  Yihui Xie (2015) Dynamic Documents with R and
+  knitr. 2nd edition. Chapman and Hall/CRC. ISBN
+  978-1498716963
+
+  Yihui Xie (2014) knitr: A Comprehensive Tool for
+  Reproducible Research in R. In Victoria Stodden,
+  Friedrich Leisch and Roger D. Peng, editors,
+  Implementing Reproducible Computational Research.
+  Chapman and Hall/CRC. ISBN 978-1466561595  
+  
+
+
+
+
+
+
